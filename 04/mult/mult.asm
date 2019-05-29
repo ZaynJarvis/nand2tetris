@@ -6,4 +6,38 @@
 // Multiplies R0 and R1 and stores the result in R2.
 // (R0, R1, R2 refer to RAM[0], RAM[1], and RAM[2], respectively.)
 
-// Put your code here.
+@0
+D=M
+@x
+M=D
+
+@1
+D=M
+@y
+M=D
+
+@2
+M=0
+
+(Loop)
+@y
+D=M
+@END
+D-1;JLT // End loop if y is zero
+
+@y
+D=M
+@y
+M=D-1
+
+@x
+D=M
+@2
+M=D+M
+
+@Loop
+0;JMP
+
+(END)
+@END
+0;JMP
