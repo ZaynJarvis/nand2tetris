@@ -27,5 +27,14 @@ CHIP Memory {
     OUT out[16];
 
     PARTS:
-    // Put your code here:
+	DMux4Way(in=load, sel=address[13..14], a=rama,b=ramb,c=sc,d=kb);
+	Or(a=rama,b=ramb,out=ram);
+	RAM16K(in=in,load=ram,address=address[0..13],out=outram);
+	Screen(in=in,load=sc,address=address[0..12],out=outsc);
+	Keyboard(out=outkb);
+	Mux4Way16(a=outram,b=outram,c=outsc,d=outkb,sel=address[13..14],out=out);
 }
+/**
+ * This applies the same concept when we design RAM structure;
+ * We use DMux to select the CHIP then use Mux to get back the value;
+ */
