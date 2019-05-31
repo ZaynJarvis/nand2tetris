@@ -4,19 +4,34 @@ import java.util.*;
 import java.io.*;
 
 class Process {
-	int pc = -1;
-	int reg = 16;
+	int pc = -1, reg = 16;
+	List<String> insList;
+	String fileName;
+	Scanner sc;
 	Keymap km;
+	File fout;
 
-	protected void execute(String fileName) throws IOException {
-		Scanner sc = new Scanner(new FileReader(new File(fileName)));
-		File fout = new File(fileName.replace(".asm", ".hack"));
-		BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fout)));
+	Process(String srcFileName) throws IOException {
+		fileName = srcFileName;
 		km = new Keymap();
+		fout = new File(fileName.replace(".asm", ".hack"));
+		sc = new Scanner(new FileReader(new File(fileName)));
+		insList = new ArrayList<>();
+	}
 
+	protected void execute() throws IOException {
+		readCommand();
+		try (BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fout)))) {
+			for (String command : insList) {
+				String result = command.charAt(0) == '@' ? aInsHandler(command) : cInsHandler(command);
+				bw.write(result + "\n");
+			}
+		}
+	}
+
+	private void readCommand() throws IOException {
 		while (sc.hasNextLine()) {
-			String input = sc.nextLine().trim();
-			String result;
+			String input = sc.nextLine().trim().replace("\n", "").replace("\r", "");
 
 			// Delete comment and empty line
 			if (input.startsWith("/*")) {
@@ -35,21 +50,12 @@ class Process {
 
 			pc++;
 			input = input.replace("\n", "").replace("\r", "");
-
-			// resolving instructions
-			if (input.charAt(0) == '@')
-				result = aInstructionWorkflow(input);
-			else
-				result = cInstructionWorkflow(input);
-
-			bw.write(result);
-			bw.newLine();
+			insList.add(input);
 		}
-		bw.close();
 		sc.close();
 	}
 
-	private String aInstructionWorkflow(String input) {
+	private String aInsHandler(String input) {
 		int value;
 		String eff = input.substring(1);
 		try {
@@ -63,7 +69,7 @@ class Process {
 		return String.format("%16s", Integer.toBinaryString(value)).replace(" ", "0");
 	}
 
-	private String cInstructionWorkflow(String input) {
+	private String cInsHandler(String input) {
 		Cinstruction ins = new Cinstruction(input);
 		return ins.generateCode();
 	}

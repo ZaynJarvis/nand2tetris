@@ -4,31 +4,32 @@ import java.util.*;
 import java.io.*;
 
 class Keymap {
-	Properties prop = new Properties();
+	Map<String, String> prop = new HashMap<>();
 
 	Keymap() throws IOException {
 		init();
 	}
 
 	private void init() throws IOException {
-		prop.load(new BufferedReader(new FileReader("./com/zaynjarvis/assembler/keyword.properties")));
+		Keyword kw = new Keyword();
+		prop = kw.getMap();
 	}
 
 	public boolean hasKeyword(String keyword) {
-		return prop.getProperty(keyword, "-1") != "-1";
+		return prop.getOrDefault(keyword, "-1") != "-1";
 	}
 
 	public int getAddress(String keyword) {
-		return Integer.parseInt(prop.getProperty(keyword), 10);
+		return Integer.parseInt(prop.get(keyword), 10);
 	}
 
 	public int setAddress(String keyword, String value) {
-		prop.setProperty(keyword, value);
+		prop.put(keyword, value);
 		return Integer.parseInt(value);
 	}
 
 	public int setAddress(String keyword, int value) {
-		prop.setProperty(keyword, Integer.toString(value));
+		prop.put(keyword, Integer.toString(value));
 		return value;
 	}
 
