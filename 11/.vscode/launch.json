@@ -1,0 +1,11 @@
+{
+  "configurations": [
+    {
+      "type": "java",
+      "name": "CodeLens (Launch) - Main",
+      "request": "launch",
+      "mainClass": "com.zaynjarvis.compiler.Main",
+      "projectName": "11_d39b57fe"
+    }
+  ]
+}
