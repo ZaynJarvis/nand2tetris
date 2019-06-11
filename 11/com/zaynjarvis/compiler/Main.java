@@ -8,7 +8,7 @@ public class Main {
     if (args.length > 0) {
       fileLocation = args[0];
     } else {
-      fileLocation = "./Average";
+      fileLocation = "./Pong";
     }
     if (fileLocation.endsWith(".jack")) {
       Process process = new Process(new File(fileLocation));
@@ -17,7 +17,7 @@ public class Main {
       File[] files = new File(fileLocation).listFiles();
       for (File file : files) {
         if (file.getName().endsWith(".jack")) {
-          Process process = new Process(file);
+          Process process = new Process(fileLocation, file);
           process.execute();
         }
       }

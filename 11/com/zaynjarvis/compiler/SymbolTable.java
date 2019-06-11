@@ -12,6 +12,7 @@ class SymbolTable {
   SymbolTable() {
     this.classScopeMap = new HashMap<>();
     this.classIndexMap = new HashMap<>();
+    this.indexMap = new HashMap<>(this.classIndexMap);
   }
 
   boolean contains(String name) {
@@ -20,13 +21,13 @@ class SymbolTable {
 
   void startSubroutine() {
     this.subroutineScopeMap = new HashMap<>();
-    this.indexMap = this.classIndexMap;
+    this.indexMap = new HashMap<>(this.classIndexMap);
   }
 
   void define(Symbol symbol) {
     String name = symbol.getName();
     String kind = symbol.getKind();
-    kind = kind == "field" ? "this" : kind;
+    kind = "field".equals(kind) ? "this" : kind;
     symbol.setKind(kind);
     int newIndex = indexMap.getOrDefault(kind, -1) + 1;
     symbol.setIndex(newIndex);
@@ -39,6 +40,7 @@ class SymbolTable {
   }
 
   int varCount(String kind) {
+    kind = kind == "field" ? "this" : kind;
     return indexMap.getOrDefault(kind, -1) + 1;
   }
 

@@ -102,7 +102,7 @@ class Parser {
     this.functionName = className + "." + functionName.getValue();
     tokens.next(); // (
     parseParameterList();
-    parseSubroutineBody(kind.isMethod());
+    parseSubroutineBody(kind);
   }
 
   private void parseParameterList() throws IOException {
@@ -116,15 +116,19 @@ class Parser {
     }
   }
 
-  private void parseSubroutineBody(boolean isMethod) throws IOException {
+  private void parseSubroutineBody(Token kind) throws IOException {
     tokens.next(); // {
     Token newToken = tokens.next();
     boolean statementsCreated = false;
     while (!newToken.getValue().equals("}")) {
       if (!newToken.getValue().equals("var") && !statementsCreated) {
         vw.writeFunction(this.functionName, st.varCount("local"));
-        if (isMethod) {
+        if (kind.isMethod()) {
           vw.writePush("argument", 0);
+          vw.writePop("pointer", 0);
+        } else if (kind.isConstructor()) {
+          vw.writePush("constant", st.varCount("field"));
+          vw.writeCall("Memory.alloc", 1);
           vw.writePop("pointer", 0);
         }
         statementsCreated = true;
@@ -150,18 +154,26 @@ class Parser {
       vw.writeALU(tokenValue.equals("~") ? "not" : "neg");
     } else if (newToken.isKeywordConstant()) {
       if (tokenValue.equals("this"))
-        vw.writePush("argument", 0);
-      else
-        vw.writePush("constant", Util.keyword2Int(tokenValue));
+        vw.writePush("pointer", 0);
+      else if (tokenValue.equals("true")) {
+        vw.writePush("constant", 1);
+        vw.writeALU("neg");
+      } else {
+        vw.writePush("constant", 0);
+      }
     } else if (newToken.getkey().endsWith("intConst")) {
-      vw.writePush("constant", Integer.parseInt(tokenValue));
+      int intConst = Integer.parseInt(tokenValue);
+      vw.writePush("constant", Math.abs(intConst));
+      if (intConst < 0) {
+        vw.writeALU("neg");
+      }
     } else if (newToken.getkey().endsWith("stringConst")) {
       int length = tokenValue.length();
       vw.writePush("constant", length);
       vw.writeCall("String.new", 1); // push constant val
       for (char ch : tokenValue.toCharArray()) {
         vw.writePush("constant", ch);
-        vw.writeCall("String.appendChar", 1);
+        vw.writeCall("String.appendChar", 2);
       }
     } else if (newToken.getValue().equals("(")) {
       // New token is '(' here
@@ -229,11 +241,14 @@ class Parser {
     boolean isMethod = false;
     if (newToken.getValue().equals(".")) {
       className = temp.getValue();
-      functionName = className + "." + tokens.next().getValue();
+      if (st.contains(className))
+        functionName = st.getSymbol(className).getType() + "." + tokens.next().getValue();
+      else
+        functionName = className + "." + tokens.next().getValue();
       newToken = tokens.next(); // (
     } else {
       className = "";
-      functionName = temp.getValue();
+      functionName = this.className + "." + temp.getValue();
       isMethod = true;
     }
     if (className.isEmpty()) {
@@ -262,13 +277,12 @@ class Parser {
       newToken = tokens.next(); // =
     }
     parseExpression();
-    vw.writePop("temp", 0);
     if (isArray) {
+      vw.writePop("temp", 0);
       vw.writePop("pointer", 1);
       vw.writePush("temp", 0);
       vw.writePop("that", 0);
     } else {
-      vw.writePush("temp", 0);
       vw.writePop(dest.getKind(), dest.getIndex());
     }
     tokens.next(); // ;
@@ -284,15 +298,16 @@ class Parser {
     String elseLabel = Util.newLabel(functionName, "ELSE");
     vw.writeIf(elseLabel);
     parseStatements();
-    vw.writeLabel(elseLabel);
     Token newToken = tokens.next();
     if (newToken.getValue().equals("else")) {
       String endLabel = Util.newLabel(functionName, "END");
       vw.writeGoto(endLabel);
+      vw.writeLabel(elseLabel);
       tokens.next(); // {
       parseStatements();
-      vw.writeGoto(endLabel);
+      vw.writeLabel(endLabel);
     } else {
+      vw.writeLabel(elseLabel);
       tokens.previous();
     }
   }
@@ -327,8 +342,10 @@ class Parser {
       tokens.previous();
       parseExpression();
       newToken = tokens.next(); // ;
+      vw.writeReturn();
     } else {
       vw.writePush("constant", 0);
+      vw.writeReturn();
     }
   }
 }
